@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<head>
+    <title>数据绑定测试</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.js"/>-->
+    <script src="../js/utils.js"></script>
+    <script src="../js/jquery/jquery-1.10.2.js"></script>
+    <script src="../js/jqueryUI/jquery-ui.js"></script>
+    <script src="../lib/bootstrap-3.1.1-dist/js/bootstrap.js" ></script>
+
+    <script src="../binding/Bind.js" ></script>
+    <script src="../binding/BindingInfo.js" ></script>
+    <script src="../binding/Bindable.js" ></script>
+    <link rel="stylesheet" type="text/css" href="../lib/bootstrap-3.1.1-dist/css/bootstrap.css" />
+</head>
+<body>
+<h1>数据绑定测试1</h1>
+<br>
+<p>三秒钟后数据会自动更新一次</p>
+<h3>输入框绑定</h3>
+<p>在这里输入数据试试：</p>
+<input type="text" id="t1" bind  value="@{obj1.name}" />
+<span bind text="@{obj1.name}" style="color:blue"></span>
+<h3>文字内容绑定</h3>
+obj1.value:<span bind text="@{obj1.value}" onclick="obj1.func1();"></span>
+<h3>复选框绑定</h3>
+选择这个复选框<input type="checkbox" bind checked="@{obj1.boolean}"/>
+<span bind text="@{obj1.boolean}" style="color:blue"></span>
+<h3>列表框绑定</h3>
+<select multiple size="5" bind selected="@{obj1.selected}">
+    <option bind="value,text" value="@{obj1.opt1}" text="@{obj1.optName1}" ></option>
+    <option bind="value,text" value="@{obj1.opt2}" text="@{obj1.optName2}" ></option>
+</select>
+<h3>Radio绑定</h3>
+<input type="radio" name="r" bind
+       value="@{obj1.opt1}" selected="@{obj1.radioSelected}" />radio1
+<input type="radio" name="r" bind
+       value="@{obj1.opt2}" selected="@{obj1.radioSelected}" />radio2
+<br>
+<span>radio选择</span><span bind text="@{obj1.radioSelected}"></span>
+<h3>模型数据绑定</h3>
+<p>
+    <table>
+    <tr bind model="obj1.ary1">
+        <td><span bind text="@{model.name}"></span></td>
+    </tr>
+    </table>
+</p>
+<button onclick="$('#obj').html(showObj(obj1))">显示数据</button>
+<p id="obj">
+
+</p>
+<script>
+    var obj1 = {
+        value:11,
+        name:"人民",
+        boolean:"3",
+        selected:1,
+        opt1:1,
+        optName1:"opt1",
+        opt2:2,
+        optName2:"opt2",
+        radioSelected:1,
+        ary1:[{name:"a"}, {name:"b"}, {name:"c"}],
+        func1: function(data) {
+            var bindable = Bind.getBindable("obj1");
+            $("span").css("color", "green");
+            bindable.put("name", "点击事件发生了！");
+        }
+    };
+    Bind.buildBindable("obj1");
+    Bind.bind();
+
+    var bindable = Bind.getBindable("obj1");
+    setTimeout(function(){
+        bindable.put("name", "new value");
+        bindable.put("boolean", !obj1.boolean);
+//        bindable.put("opt1", !obj1.opt1);
+//        bindable.put("opt2", !obj1.opt2);
+        bindable.put("selected", ["1","2"]);
+        bindable.put("radioSelected", 2);
+    }, 2000);
+
+</script>
+</body>
+</html>

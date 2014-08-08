@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<head>
+    <title>数据绑定测试</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.js"/>-->
+    <script src="../js/utils.js"></script>
+    <script src="../js/jquery/jquery-1.10.2.js"></script>
+    <script src="../lib/bootstrap-3.1.1-dist/js/bootstrap.js" ></script>
+
+    <script src="../binding/Bind.js" ></script>
+    <script src="../binding/BindingInfo.js" ></script>
+    <script src="../binding/Bindable.js" ></script>
+    <link rel="stylesheet" type="text/css" href="../lib/bootstrap-3.1.1-dist/css/bootstrap.css" />
+
+    <style>
+        .grid{
+            border-style: solid;
+            border-width: 1px;
+            width: 80px;
+        }
+        .row {
+            background: #f5f5f5;
+        }
+        .selectedRow {
+            background: dodgerblue;
+        }
+    </style>
+</head>
+<body>
+
+<br>
+<h1>数据绑定测试2 -- 模型绑定</h1>
+<input type="text" bind value="@{info.name}" text="@{info.name}"/>
+<span bind text="@{info.name}"></span>
+<input type="text" bind value="@{info.value}"/>
+<button onclick="obj1.func2()">增加</button>
+<button onclick="obj1.func6()">保存</button>
+<table style="border-style: solid;border-width: 1px">
+    <!--在第一行不使用class=“row”会导致下面的行最左侧都增加一列，太奇怪。-->
+    <tr class="row">
+        <td class="grid">名称</td>
+        <td class="grid">值</td>
+        <td class="grid">非行对象值</td>
+        <td >子表</td>
+        <td class="grid">行对象方法值</td>
+        <td class="grid">非行对象方法值</td>
+        <td class="grid">行对象方法调用</td>
+        <td class="grid">非行数据方法调用</td>
+        <td class="grid">模型对象方法调用（特殊）</td>
+    </tr>
+    <tr bind model="obj1.ary1" class="row" onclick="@{model.op}" >
+        <td class="grid"><span bind text="@{model.name}">ddd</span></td>
+        <td class="grid"><span bind html="@{model.value}">vvv</span></td>
+        <td class="grid"><span bind text="@{obj1.name}">vvv</span></td>
+        <td>
+            <table>
+                <tr bind model="model.products" onclick="@{model.select}">
+                    <td class="grid"><span bind text="@{model.name}">222</span></td>
+                    <td class="grid"><span bind text="@{model.amount}">222</span></td>
+                    <td class="grid"><span bind text="@{model.price}">222</span></td>
+                    <td class="grid"><button bind onclick="@{model.parent.remove}">删除</button></td>
+                </tr>
+            </table>
+        </td>
+        <td class="grid"><span bind text="@{model.val}">vvv</span></td>
+        <td class="grid"><span bind text="@{obj1.func5$model}">vvv</span></td>
+        <td class="grid"><button bind onclick="@{model.op}">选择</button></td>
+        <td class="grid"><button bind onclick="@{obj1.func4$model}">f4</button></td>
+        <td class="grid"><button bind onclick="@{obj1.ary1.remove$model}">删除1</button></td>
+    </tr>
+</table>
+
+<button onclick="obj1.func3()">删除第一行</button>
+<button onclick="Bind.apply()">应用绑定</button>
+<span bind model="obj1.ary1">
+    <input type="radio" name="r" bind
+       value="@{model.value}" selected="@{obj1.radioSelected}"/>
+    <span bind text="@{model.name}"></span>
+</span>
+<span bind text="@{obj1.func5}">vvv</span>
+
+<span bind text="@{selectedRowObj.name}">vvv</span>
+<span bind text="@{selectedRowObj.value}">vvv</span>
+<table>
+    <tr bind model="selectedRowObj.products" onclick="@{model.select}">
+        <td class="grid"><span bind text="@{model.name}">222</span></td>
+        <td class="grid"><span bind text="@{model.amount}">222</span></td>
+        <td class="grid"><span bind text="@{model.price}">222</span></td>
+        <td class="grid"><button bind onclick="@{model.parent.remove}">删除</button></td>
+    </tr>
+</table>
+
+<button onclick="$('#obj').html(showObj(obj1))">显示数据</button>
+
+<p id="obj">
+
+</p>
+<script>
+    var info ={name:"name",value:"value"};
+    var selectedRow, selectedRowObj = new smp("","",[new Product("", 0, 0)]);
+    function Product(name, amount, price) {
+        this.name = name;
+        this.amount = amount;
+        this.price = price;
+    };
+
+    Product.selectedRow = null;
+
+    Product.prototype.select = function(rowBd, event) {
+        var flag = rowBd.parent.parent._selectedProduct;
+        if(flag != null) {
+            $(flag._rowElems).removeClass("selectedRow");
+        }
+        rowBd.parent.parent._selectedProduct = this;
+        $(rowBd.parent.parent._selectedProduct._rowElems).addClass("selectedRow");
+        event.stopPropagation();
+    };
+
+    function smp(name, value, products) {
+        this.name = name;
+        this.value = value;
+        this.products = products;
+    };
+    smp.prototype.op = function() {
+        var sroBd = Bind.getBindable("selectedRowObj");
+        sroBd.put(undefined,this.get());
+        if(selectedRow != null) {
+            $(selectedRow._rowElems).removeClass("selectedRow");
+        }
+        selectedRow = this;
+        $(selectedRow._rowElems).addClass("selectedRow");
+        var infoBd = Bind.getBindable("info");
+        infoBd.put("name", this.get("name"));
+        infoBd.put("value", this.get("value"));
+
+    };
+    smp.prototype.val = function() {
+        return "model.val()=" + this.get("name") + this.get("value");
+    };
+    var obj1 = {
+        value:11,
+        name:"人民",
+        boolean:"3",
+        selected:1,
+        opt1:1,
+        optName1:"opt1",
+        opt2:2,
+        optName2:"opt2",
+        radioSelected:1,
+        _selectedProduct:null,
+        ary1:[new smp("a", 1, [new Product("电视", 12, 100),
+            new Product("盘子", 34, 10340),new Product("汽车", 345, 190)]),
+            new smp("b", 2, [new Product("电视1", 12, 100),
+                new Product("盘子1", 34, 10340),new Product("汽车1", 345, 190)]),
+            new smp("c", 3, [new Product("电视2", 12, 100),
+                new Product("盘子2", 34, 10340),new Product("汽车2", 345, 190)])],
+        func1: function(data) {
+            var bindable = Bind.getBindable("obj1");
+            $("span").css("color", "green");
+            bindable.put("name", "点击事件发生了！");
+        },
+        func2:function() {
+            var ary1 = Bind.getBindable("obj1.ary1");
+            ary1.add(new smp(info.name, info.value, [new Product("电视", 12, 100),
+                new Product("盘子", 34, 10340),new Product("汽车", 345, 190)]));
+        },
+        func3:function() {
+            var ary1 = Bind.getBindable("obj1.ary1");
+            ary1.remove.call(ary1.get(0));
+        },
+        func4:function(rowBd, event) {
+            var bindable = Bind.getBindable("info");
+            $("span").css("color", "red");
+            this.put("value", this.get("value") + 1);
+            bindable.put("name", "func4_" + this.get("value"));
+            event.stopPropagation();
+        },
+        func5:function(data) {
+            return "func5()=" + data.get("name");
+        },
+        func6:function() {
+            var infoBd = Bind.getBindable("info");
+            selectedRow.put("name", infoBd.get("name"));
+            selectedRow.put("value", infoBd.get("value"));
+        }
+    };
+    Bind.buildBindable(["obj1","info","selectedRowObj"]);
+//    Bind.buildBindable("info");
+//    Bind.buildBindable("selectedRowObj");
+    Bind.bind();
+
+    var bindable = Bind.getBindable("obj1");
+    var ary1 = Bind.getBindable("obj1.ary1");
+
+    setTimeout(function(){
+        bindable.put("name", "new value");
+        bindable.put("boolean", !obj1.boolean);
+//        bindable.put("opt1", !obj1.opt1);
+//        bindable.put("opt2", !obj1.opt2);
+        bindable.put("selected", ["1","2"]);
+        bindable.put("radioSelected", 2);
+        ary1.get(0).put("name", 33333);
+        ary1.add(new smp("d", 4,[new Product("电视", 12, 100),
+            new Product("盘子", 34, 10340),new Product("汽车", 345, 190)]));
+        ary1.get(3).put("products",[new Product("电视4", 12, 100),
+            new Product("盘子4", 34, 10340),new Product("汽车4", 345, 190)]);
+        ary1.get(3).products.get(0).put("name", "单独更新行对象属性");
+        ary1.get(3).products.add(new Product("新增行", 12, 100));
+    }, 2000);
+
+</script>
+</body>
+</html>
