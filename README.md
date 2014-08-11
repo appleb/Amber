@@ -1,8 +1,12 @@
+琥珀（Amber)
+============
+
 琥珀（Amber)主要实现了从JavaScript数据到html元素之间的绑定。通过定义html元素或其属性JavaScript数据之间的关系，按照JavaScript数据生成html元素或设定元素的属性，并实现双向自动更新。当JavaScript数据发生改变时其相关的html元素会自动更新，当用户在页面中输入了数据，输入的数据会自动更新到html元素相关的JavaScript数据中，这称之为双向自动更新。
 1.	功能
-构造javascript数据
-var obj1 = {……};
-Amber.buildBindable("obj1");
+----------
+### 构造javascript数据
+        var obj1 = {……};
+        Amber.buildBindable("obj1");
 buildBindable函数为JavaScript数据构造可绑定数据对象，参数为JavaScript对象变量名。只有构造了可绑定数据的javascript数据才能被绑定。在构造可绑定数据时，给定的JavaScript变量的所有属性，以及属性的属性都会被构造可绑定数据。
 绑定元素的属性：
 <input type="text" id="t1" bind  value="@{obj1.name}" />
