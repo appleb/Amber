@@ -12,7 +12,7 @@
 buildBindable函数为JavaScript数据构造可绑定数据对象，参数为JavaScript对象变量名。只有构造了可绑定数据的javascript数据才能被绑定。在构造可绑定数据时，给定的JavaScript变量的所有属性，以及属性的属性都会被构造可绑定数据。
 ### 绑定元素的属性：
 ```html
-        <input type="text" id="t1" bind  value="*@{obj1.name}*" />
+        <input type="text" id="t1" bind  value="@{obj1.name}" />
 ```
 通过把属性对应的数据名放在“@{”和“}中，表明该数据与该属性绑定。该属性称为绑定属性。在“@{”和“}中的字符串称为绑定字符串，绑定字符串应是一个JavaScript对象的字面量。拥有绑定属性的元素必须包含bind属性，否则该元素的绑定属性无效。
 ### 绑定文本：
