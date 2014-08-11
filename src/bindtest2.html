@@ -4,15 +4,15 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!--<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.js"/>-->
-    <script src="../js/utils.js"></script>
+    <!--<script src="../js/utils.js"></script>-->
     <script src="../js/jquery/jquery-1.10.2.js"></script>
-    <script src="../lib/bootstrap-3.1.1-dist/js/bootstrap.js" ></script>
+    <!--<script src="../lib/bootstrap-3.1.1-dist/js/bootstrap.js" ></script>-->
 
-    <!--<script src="../binding/Bind.js" ></script>-->
-    <!--<script src="../binding/BindingInfo.js" ></script>-->
-    <!--<script src="../binding/Bindable.js" ></script>-->
-    <script src="../binding/amber.js"></script>
-    <link rel="stylesheet" type="text/css" href="../lib/bootstrap-3.1.1-dist/css/bootstrap.css" />
+    <!--<script src="./Bind.js" ></script>-->
+    <!--<script src="./BindingInfo.js" ></script>-->
+    <!--<script src="./Bindable.js" ></script>-->
+    <script src="./amber.js"></script>
+    <!--<link rel="stylesheet" type="text/css" href="../lib/bootstrap-3.1.1-dist/css/bootstrap.css" />-->
 
     <style>
         .grid{
@@ -79,10 +79,12 @@
        value="@{model.value}" selected="@{obj1.radioSelected}"/>
     <span bind text="@{model.name}"></span>
 </span>
-<span bind text="@{obj1.func5}">vvv</span>
 
+<div bind text="@{obj1.func5}">vvv</div>
+<div>
 <span bind text="@{selectedRowObj.name}">vvv</span>
 <span bind text="@{selectedRowObj.value}">vvv</span>
+</div>
 <table>
     <tr bind model="selectedRowObj.products" onclick="@{model.select}">
         <td class="grid"><span bind text="@{model.name}">222</span></td>
