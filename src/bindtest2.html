@@ -8,9 +8,10 @@
     <script src="../js/jquery/jquery-1.10.2.js"></script>
     <script src="../lib/bootstrap-3.1.1-dist/js/bootstrap.js" ></script>
 
-    <script src="../binding/Bind.js" ></script>
-    <script src="../binding/BindingInfo.js" ></script>
-    <script src="../binding/Bindable.js" ></script>
+    <!--<script src="../binding/Bind.js" ></script>-->
+    <!--<script src="../binding/BindingInfo.js" ></script>-->
+    <!--<script src="../binding/Bindable.js" ></script>-->
+    <script src="../binding/amber.js"></script>
     <link rel="stylesheet" type="text/css" href="../lib/bootstrap-3.1.1-dist/css/bootstrap.css" />
 
     <style>
@@ -72,7 +73,7 @@
 </table>
 
 <button onclick="obj1.func3()">删除第一行</button>
-<button onclick="Bind.apply()">应用绑定</button>
+<button onclick="Amber.apply()">应用绑定</button>
 <span bind model="obj1.ary1">
     <input type="radio" name="r" bind
        value="@{model.value}" selected="@{obj1.radioSelected}"/>
@@ -110,10 +111,10 @@
     Product.prototype.select = function(rowBd, event) {
         var flag = rowBd.parent.parent._selectedProduct;
         if(flag != null) {
-            $(flag._rowElems).removeClass("selectedRow");
+            $(flag.elements()).removeClass("selectedRow");
         }
         rowBd.parent.parent._selectedProduct = this;
-        $(rowBd.parent.parent._selectedProduct._rowElems).addClass("selectedRow");
+        $(rowBd.parent.parent._selectedProduct.elements()).addClass("selectedRow");
         event.stopPropagation();
     };
 
@@ -123,14 +124,14 @@
         this.products = products;
     };
     smp.prototype.op = function() {
-        var sroBd = Bind.getBindable("selectedRowObj");
+        var sroBd = Amber("selectedRowObj");
         sroBd.put(undefined,this.get());
         if(selectedRow != null) {
-            $(selectedRow._rowElems).removeClass("selectedRow");
+            $(selectedRow.elements()).removeClass("selectedRow");
         }
         selectedRow = this;
-        $(selectedRow._rowElems).addClass("selectedRow");
-        var infoBd = Bind.getBindable("info");
+        $(selectedRow.elements()).addClass("selectedRow");
+        var infoBd = Amber("info");
         infoBd.put("name", this.get("name"));
         infoBd.put("value", this.get("value"));
 
@@ -156,21 +157,21 @@
             new smp("c", 3, [new Product("电视2", 12, 100),
                 new Product("盘子2", 34, 10340),new Product("汽车2", 345, 190)])],
         func1: function(data) {
-            var bindable = Bind.getBindable("obj1");
+            var bindable = Amber("obj1");
             $("span").css("color", "green");
             bindable.put("name", "点击事件发生了！");
         },
         func2:function() {
-            var ary1 = Bind.getBindable("obj1.ary1");
+            var ary1 = Amber("obj1.ary1");
             ary1.add(new smp(info.name, info.value, [new Product("电视", 12, 100),
                 new Product("盘子", 34, 10340),new Product("汽车", 345, 190)]));
         },
         func3:function() {
-            var ary1 = Bind.getBindable("obj1.ary1");
+            var ary1 = Amber("obj1.ary1");
             ary1.remove.call(ary1.get(0));
         },
         func4:function(rowBd, event) {
-            var bindable = Bind.getBindable("info");
+            var bindable = Amber("info");
             $("span").css("color", "red");
             this.put("value", this.get("value") + 1);
             bindable.put("name", "func4_" + this.get("value"));
@@ -180,24 +181,21 @@
             return "func5()=" + data.get("name");
         },
         func6:function() {
-            var infoBd = Bind.getBindable("info");
+            var infoBd = Amber("info");
             selectedRow.put("name", infoBd.get("name"));
             selectedRow.put("value", infoBd.get("value"));
         }
     };
-    Bind.buildBindable(["obj1","info","selectedRowObj"]);
-//    Bind.buildBindable("info");
-//    Bind.buildBindable("selectedRowObj");
-    Bind.bind();
+    Amber.buildBindable(["obj1","info","selectedRowObj"]);
+    Amber.bind();
 
-    var bindable = Bind.getBindable("obj1");
-    var ary1 = Bind.getBindable("obj1.ary1");
+    var bindable = Amber("obj1");
+    var ary1 = Amber("obj1.ary1");
+    Amber("selectedRowObj").put(Amber.get("obj1.ary1.0"));
 
     setTimeout(function(){
         bindable.put("name", "new value");
         bindable.put("boolean", !obj1.boolean);
-//        bindable.put("opt1", !obj1.opt1);
-//        bindable.put("opt2", !obj1.opt2);
         bindable.put("selected", ["1","2"]);
         bindable.put("radioSelected", 2);
         ary1.get(0).put("name", 33333);

@@ -64,15 +64,15 @@ obj1.value:<span bind text="@{obj1.value}" onclick="obj1.func1();"></span>
         radioSelected:1,
         ary1:[{name:"a"}, {name:"b"}, {name:"c"}],
         func1: function(data) {
-            var bindable = Bind.getBindable("obj1");
+            var bindable = Amber.getBindable("obj1");
             $("span").css("color", "green");
             bindable.put("name", "点击事件发生了！");
         }
     };
-    Bind.buildBindable("obj1");
-    Bind.bind();
+    Amber.buildBindable("obj1");
+    Amber.bind();
 
-    var bindable = Bind.getBindable("obj1");
+    var bindable = Amber.getBindable("obj1");
     setTimeout(function(){
         bindable.put("name", "new value");
         bindable.put("boolean", !obj1.boolean);
