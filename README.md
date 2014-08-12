@@ -129,3 +129,5 @@ Obj1.func5是一个函数，text属性将得到该函数运行后的返回值。
 
 ### Bindable.prototype.elements ()
 获得当前可绑定对象相关的html元素集合
+
+* 需要jQuery，运行测试页面请确保在“../js/jquery/”位置存在jquery.js。
