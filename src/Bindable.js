@@ -1,5 +1,5 @@
 /**
- Copyright (c) 2014, QiSiYu Computer Technology Company BeiJing.
+ Copyright (c) 2014, QiSiYu Computer Technology co. Ltd. BeiJing.
  All rights reserved.
 
 
@@ -54,7 +54,7 @@ function Bindable(value, attrName, obj, parent) {
     this._rows;   //数组数据的元素的bindable数组
     this._bindingInfos = new Array();       //当前数据的绑定信息
     this._rowElems = new Array();                  //当前对象是行数据时，保存行元素
-    this.parent = parent;     //当前数据的上层数据
+    this.parent = parent;     //当前可绑定数据的上层可绑定数据
 
     if(this._obj == null) {
         this._type = "global";
@@ -140,9 +140,19 @@ Bindable.prototype.remove = function(bindable) {
         }
         for(i = this._rowElems.length -1; i >= 0; i--) {
             $(this._rowElems[i]).remove();
+            this._rowElems.remove(i);
 //            $(this._rowElems[i]).animate({height:"0"}, 3000, function () {
 //                $(this).remove();
 //            });
+        }
+        if(this.parent.isArray()) {
+            for(var i = 0; i < this.parent._rows.length; i++){
+                if(this.parent._rows[i] == this) {
+                    this.parent._rows.remove(this);   //删除当前可绑定数组指定位置的可绑定数据
+                    this.parent._obj[this.parent._attrName].remove(i);      //删除当前可绑定数组对应实际数组对象指定位置的数据
+                    break;
+                }
+            }
         }
     } else {
         if(this.isArray()) {
@@ -176,10 +186,11 @@ Bindable.prototype.add = function(value) {
         for (var i = 0; i < rowElems.length; i++) {
             lastRowElem = rowElems[i];
             model = lastRow == null? lastRowElem : $(lastRowElem).data("modelElem");
-            newRowElem = $(model).clone(true).get(0);
+            newRowElem = $(model).clone(true).get(0);//从模版复制一个新行
             $(newRowElem).show("slow");
             bindable.addRowElem(newRowElem);
             newRowElem.removeAttribute("model");
+            $(newRowElem).removeData();
             $(newRowElem).data("modelElem", model);   //保存行元素的模版
             Amber.bindElem(newRowElem, bindable);
             $(lastRowElem).after(newRowElem);
@@ -216,12 +227,14 @@ Bindable.prototype.get = function(attrName) {
             if(index >= 0 && index <= this.len()) {
                 return this._rows[index];
             }
+        } else {
+            return this._obj[attrName];
         }
     }else if(this.isObject()){
         if(this[attrName] instanceof Bindable) {
             return this[attrName]._obj[attrName];
         } else {
-            return attrName == "" ? this._value:this._obj[attrName];//todo:尽量不使用_value属性，准备删除该属性
+            return attrName == "" ? this._value:getAttr(this._obj, attrName);//todo:尽量不使用_value属性，准备删除该属性
         }
     }else if(this.isNative()) {
         return this._obj[attrName];
@@ -241,7 +254,7 @@ Bindable.prototype.get = function(attrName) {
  * @returns {*}当前可绑定数据
 */
 Bindable.prototype.put = function(attrName, value, elem) {
-    if(!this.isReadOnly()) {
+    //if(!this.isReadOnly()) {
         if(arguments.length == 1) {
             value = arguments[0];
             attrName = this._attrName;
@@ -252,14 +265,14 @@ Bindable.prototype.put = function(attrName, value, elem) {
         }
 
         var attrBindable;
-        if(attrName == this._attrName && !this.isNative()) {
+        if(attrName == this._attrName && !this.isNative() && !this.isFunction()) {
             attrBindable = this;
         }else {
             attrBindable = this._getBindable(attrName);   //[attrName];
         }
 
         if(attrBindable instanceof Bindable) {
-            if(attrBindable.isNative()) {
+            if(attrBindable.isNative() || attrBindable.isFunction()) {
                 attrBindable.put(attrName, value);
             }else if(attrBindable.isArray()) {
                 if(value instanceof Array) {
@@ -283,17 +296,23 @@ Bindable.prototype.put = function(attrName, value, elem) {
                         attrBindable.put(objAttrName, value[objAttrName]);
                     }
                 }
-                attrBindable._obj = value;
             }
        }else {
             this._obj[attrName] = value;
             Amber.apply(this, elem);
         }
 
-    }
+    //}
     return this;
 };
 
+/**
+ *应用当前数据的绑定
+ * @param elem -不应用帮顶的元素
+ */
+Bindable.prototype.apply = function(elem) {
+    Amber.apply(this, elem);
+};
 /**
  *获得数据相关的所有元素 。
  * @returns {*}
@@ -342,7 +361,7 @@ Bindable.prototype._getBindable = function(name) {
             if(v == null) {
                 if(obj instanceof Bindable && obj.isArray()) {
                     v = obj.getArrayBindable(attrName);
-                }else {
+                } else {
                     return null;
                 }
             }

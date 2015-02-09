@@ -1,5 +1,5 @@
 /**
- Copyright (c) 2014, QiSiYu Computer Technology Company BeiJing.
+ Copyright (c) 2014, QiSiYu Computer Technology co. Ltd. BeiJing.
  All rights reserved.
 
 

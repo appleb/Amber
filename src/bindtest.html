@@ -16,7 +16,7 @@
     <link rel="stylesheet" type="text/css" href="../lib/bootstrap-3.1.1-dist/css/bootstrap.css" />
 </head>
 <body>
-<h1>数据绑定测试1</h1>
+<h1>数据绑定测试1</h1><comp bind html="@{obj1.name}">sdfsdfs</comp>
 <br>
 <p>三秒钟后数据会自动更新一次</p>
 <h3>输入框绑定</h3>
@@ -53,10 +53,11 @@ obj1.value:<span bind text="@{obj1.value}" onclick="obj1.func1();"></span>
 
 </p>
 <script>
+    $("comp").addClass("grid");
     var obj1 = {
         value:11,
         name:"人民",
-        boolean:"3",
+        boolean:false,
         selected:1,
         opt1:1,
         optName1:"opt1",
