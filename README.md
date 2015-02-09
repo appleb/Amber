@@ -79,6 +79,25 @@ Obj1.func5是一个函数，text属性将得到该函数运行后的返回值。
         </tr>
 ```
 行元素可以嵌套在另一个行元素内部。内层行元素的model属性应该引用外层行元素的行数据的属性，且该属性应是一个数组。内层行元素的行内元素中对model的引用指内层行元素的行数据。内层行元素的model属性中对model的引用指外层行元素的行数据。
+
+### 删除行模版元素
+例如：
+'''html
+        <option bind model=“……” removeModel/>
+'''
+使用removeModel时，Amber会在绑定该元素后删除该元素。如果元素绑定了数组，并且对原有数据进行全部删除后又增加新数据的操作，这时可以使用这个参数。
+### 绑定checkbox，radio，select元素的选择值
+'''
+Checkbox元素通过bind-checked属性，radio，select元素通过selected属性绑定元素选择的值。例如：
+'''html
+<select bind selected="@{selVal}">
+### 绑定事件
+'''
+可以使用html属性如onclick,onchange等绑定事件，也可以使用event-onXXX属性绑定事件，如：event-onclick。这样可以避免某些浏览器出错。
+### 绑定css属性
+'''
+可以使用css-XXX属性来给指定的css属性绑定数据。例如：css-display=”@{displayVal}”
+
 ### 应用绑定
 ```html
         Amber.bind();
@@ -129,5 +148,9 @@ Obj1.func5是一个函数，text属性将得到该函数运行后的返回值。
 
 ### Bindable.prototype.elements ()
 获得当前可绑定对象相关的html元素集合
+
+### Bindable.prototype.apply()
+应用当前数据的绑定。
+
 
 * 需要jQuery，运行测试页面请确保在“../js/jquery/”位置存在jquery.js。
