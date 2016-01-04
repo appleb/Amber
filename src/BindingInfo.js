@@ -45,10 +45,31 @@
  * @constructor
  */
 
-function BindingInfo(elem, attrName, dataName) {
+function BindingInfo(elem, attrName, bindStr) {
     this.elem = Amber.option(elem);            //html元素
     this.attrName = Amber.option(attrName);       //绑定的html元素的属性名
-    this.dataName = Amber.option(dataName);               //bindable数据名
+    this.bindStr = Amber.option(bindStr);               //绑定字符串
+
+    this.dataName = this.bindStr;   //绑定数据名i.e. bindStr="a.b$c"  dataName = "a.b"
+    this.params = null;  //绑定字符串的参数，i.e. bindStr="a.b$c，d"  params=["c","d"]
+    this.refModel = false;//绑定数据或参数是否引用的行数据
+    if(this.bindStr.indexOf("$") != -1) { //绑定信息包含参数
+        this.dataName = this.bindStr.prefix("$");
+        var paramStr = this.bindStr.postfix("$");
+        this.params = paramStr.split(",");
+    }
+
+    if(this.dataName.startWith("model")) {
+        this.refModel = true;
+    }
+
+    for(var j = 0; this.params != null && j < this.params.length; j++) {
+        var param = this.params[j].trim();
+        if(param.startWith("model")) {
+            this.refModel = true;
+        }
+        this.params[j] = param;
+    }
 }
 
 /**
@@ -56,7 +77,7 @@ function BindingInfo(elem, attrName, dataName) {
  */
 BindingInfo.prototype.clear = function () {
     this.attrName = null;
-    this.dataName = null;
+    this.bindStr = null;
     $(this.elem).remove();
 };
 

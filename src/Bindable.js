@@ -44,7 +44,14 @@
 /**
  * @constructor
  */
-
+/**
+ *构造可绑定数据
+ * @param value - 原始数据的值
+ * @param attrName - 原始数据的变量名或对象的属性名
+ * @param obj - 拥有当前属性的对象，空表示当前数据是一个全局变量
+ * @param parent - 当前可绑定数据的上层可绑定数据
+ * @constructor
+ */
 function Bindable(value, attrName, obj, parent) {
     this._attrName = attrName;      //原始数据的变量名或对象的属性名
     this._value = value;            //原始数据的值
@@ -169,6 +176,17 @@ Bindable.prototype.remove = function(bindable) {
     }
 };
 
+Bindable.prototype.removeAll = function() {
+    if(this.isArray()) {
+        for(var i = this._rows.length - 1; i >= 0; i--){
+            var v = this._rows[i];
+            this._rows.remove(i);   //删除当前可绑定数组指定位置的可绑定数据
+            this._obj[this._attrName].remove(i);      //删除当前可绑定数组对应实际数组对象指定位置的数据
+            v.remove();
+        }
+    }
+};
+
 /**
  *给可绑定数组增加元素
  * @param attrName
@@ -187,13 +205,14 @@ Bindable.prototype.add = function(value) {
             lastRowElem = rowElems[i];
             model = lastRow == null? lastRowElem : $(lastRowElem).data("modelElem");
             newRowElem = $(model).clone(true).get(0);//从模版复制一个新行
-            $(newRowElem).show("slow");
+            //$(newRowElem).show("slow");
             bindable.addRowElem(newRowElem);
             newRowElem.removeAttribute("model");
             $(newRowElem).removeData();
             $(newRowElem).data("modelElem", model);   //保存行元素的模版
             Amber.bindElem(newRowElem, bindable);
             $(lastRowElem).after(newRowElem);
+            $(newRowElem).show(100);
         }
 
         Amber.apply(bindable, undefined);
@@ -211,6 +230,16 @@ Bindable.prototype.getArrayBindable = function(index) {
 
     return null;
 };
+
+/**
+ *为当前的绑定数据设置新的下级绑定数据，或覆盖旧的绑定数据
+ *新的绑定数据必须是当前绑定数据的直接属性。
+ * @param attrName
+ */
+Bindable.prototype.setAttr = function(attrName) {
+    this[attrName]  = new Bindable(this.get()[attrName], attrName, this.get(), this);
+};
+
 /**
  *获得可绑定数据的指定属性的值
  * @param attrName -属性名称
@@ -281,8 +310,9 @@ Bindable.prototype.put = function(attrName, value, elem) {
                         len = Math.min(oldLen,newLen), i;
                     for(i = oldLen - 1; i >= 0; i--) {
                         var v = attrBindable.getArrayBindable(i);
-                        attrBindable.remove.call(v);
-
+                        if(v != null) {
+                            attrBindable.remove.call(v);
+                        }
                     }
                     for(i = 0; i < newLen; i++) {
                         attrBindable.add(value[i]);
@@ -291,14 +321,17 @@ Bindable.prototype.put = function(attrName, value, elem) {
             }else if(attrBindable.isObject()) {
                 //对应更新原有属性值
                 for(var objAttrName in attrBindable) {
-                    if(!this.isNativeAttr(objAttrName) && !(value[objAttrName] instanceof Function)
-                        && !(this[objAttrName] instanceof Function)){
+//                    if(!this.isNativeAttr(objAttrName) && !(value[objAttrName] instanceof Function)
+//                        && !(this[objAttrName] instanceof Function)){
+                    if(!this.isNativeAttr(objAttrName)){ //允许put函数属性，以便刷新绑定函数的组件数据
                         attrBindable.put(objAttrName, value[objAttrName]);
                     }
                 }
             }
        }else {
-            this._obj[attrName] = value;
+            if(!(this.isFunction()) || value instanceof Function) {  //不修改原数据的函数属性，仅刷新组件数据
+                this._obj[attrName] = value;
+            }
             Amber.apply(this, elem);
         }
 
@@ -308,7 +341,7 @@ Bindable.prototype.put = function(attrName, value, elem) {
 
 /**
  *应用当前数据的绑定
- * @param elem -不应用帮顶的元素
+ * @param elem -不应用绑定的元素
  */
 Bindable.prototype.apply = function(elem) {
     Amber.apply(this, elem);
@@ -336,9 +369,6 @@ Bindable.prototype.elements = function() {
         }
     }
 };
-
-Bindable._nativeAttr = ",_attrName,_value,_type,_obj,_models,_rows,_bindingInfos," +
-    "parent,_rowElems,_selectedProduct,";
 
 Bindable.prototype.isNativeAttr = function(attrName) {
     return (Bindable._nativeAttr).indexOf("," + attrName + ",") >= 0;
@@ -374,6 +404,11 @@ Bindable.prototype._getBindable = function(name) {
     }
 };
 
+Bindable._nativeAttr = ",_attrName,_value,_type,_obj,_models,_rows,_bindingInfos," +
+    "parent,_rowElems,_selectedProduct,";
+for(var p in Bindable.prototype) {
+   Bindable._nativeAttr += (p + ",");
+}
 
 //下面的代码是为了使google clouser compiler保留这些名字
 window['Bindable'] = Bindable;

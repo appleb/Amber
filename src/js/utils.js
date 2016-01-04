@@ -1,5 +1,5 @@
 /**
- Copyright (c) 2014, QiSiYu Computer Technology Company BeiJing.
+ Copyright (c) 2014, QiSiYu Computer Technology co. Ltd. BeiJing.
  All rights reserved.
 
 
@@ -44,6 +44,30 @@ String.prototype.endWith=function(str){
     return reg.test(this);
 };
 
+String.prototype.prefix = function(token) {
+    var idx = this.indexOf(token);
+    return idx == -1 ? this : this.substring(0, idx);
+};
+
+/**
+ *返回字符串的制定字符的后缀，如果字符串不包含制定字符，返回null
+ * @param token
+ * @returns {*}
+ */
+String.prototype.postfix = function(token) {
+    var idx = this.indexOf(token);
+    return idx == -1 ? null : this.substring(idx + token.length, this.length);
+}
+
+Array.prototype.indexOf = function(obj) {
+    for (var i = 0; i < this.length; i++) {
+        if (obj === this[i]) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 Array.prototype.insert = function (idx, val) {
     this.splice(idx, 0, val);
 };
@@ -52,9 +76,10 @@ Array.prototype.remove = function (idx) {
     if ($.isNumeric(idx)) {
         this.splice(idx, 1);
     } else {
+        var val = idx;
         for (var i = 0; i < this.length; i++) {
-            if (idx === this[i]) {
-                this.splice(i, 1)
+            if (val === this[i]) {
+                this.splice(i, 1);
                 return;
             }
         }
@@ -72,3 +97,14 @@ function showObj(obj) {
     }
     return s;
 }
+
+function getAttr(obj, attrName) {
+    var attrs = attrName.split(".");
+    var ret = obj;
+
+    for(var i = 0; i < attrs.length; i++) {
+        ret = ret[attrs[i]];
+    }
+    return ret;
+}
+

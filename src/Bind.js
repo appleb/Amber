@@ -56,25 +56,28 @@ Amber.option = function (obj) {
     return obj == undefined ? null : obj;
 };
 
+/**
+ *构造数据的可绑定对象
+ * @param attrName -数据名称
+ */
 Amber.buildBindable = function (attrName) {
     var attrValue;
-    if (arguments.length == 1) {
-        if (attrName instanceof Array) {
-            for (var i = 0; i < attrName.length; i++) {
-                Amber.buildBindable(attrName[i]);
-            }
-        } else {
-            try {
-                attrValue = eval(attrName);
-                //var bindable = Amber.getBindable(attrName);
-                //if(bindable == null || bindable == Amber ) {   //不重复创建帮顶对象
+    if (attrName instanceof Array) {
+        for (var i = 0; i < attrName.length; i++) {
+            Amber.buildBindable(attrName[i]);
+        }
+    } else {
+        try {
+            attrValue = eval(attrName);
+            var bindable = Amber.getBindable(attrName);
+            if(bindable == null || bindable == Amber ) {   //不重复创建绑定对象
                 Amber[attrName] = new Bindable(attrValue, attrName, null);
-                //}
-            } catch (e) {
-                console.log("Failed to build bindable for " + attrName + ":" + e.message);
             }
+        } catch (e) {
+            console.log("Failed to build bindable for " + attrName + ":" + e.message);
         }
     }
+
 };
 
 Amber.getBindable = function (objName) {
@@ -113,20 +116,20 @@ Amber.getBindable = function (objName) {
             }
 
             if (owner[name] instanceof Bindable) {
-                var r, o = owner[name];
-                for (var j = i; j < names.length; j++) {
-                    r = o[names[j]];
-                    if (r instanceof Bindable) {
-                        o = r;
-                    } else {
-                        return null;
-                    }
+            var r, o = owner[name];
+            for (var j = i; j < names.length; j++) {
+                r = o[names[j]];
+                if (r instanceof Bindable) {
+                    o = r;
+                } else {
+                    return null;
                 }
-                return o;
             }
+            return o;
         }
     }
-    return owner;
+}
+return owner;
 };
 
 /**
@@ -190,34 +193,40 @@ Amber.bindElem = function (elem, rowBindable, varname) {
                 var info = Amber.parseInfo(elem, attrName, varname);
 
                 if (info != null) {
-                    var bindable;
-                    if (rowBindable != null && (info.dataName.startWith("model")
-                        || info.dataName.endWith("\\$model"))) {  //rowBindable仅用于对模型元素的引用
-                        //绑定在行数据上
-                        bindable = rowBindable;
+                    var bindable, bindables = new Array();
 
-                        if (info.dataName.startWith("model.")) {
-                            var elemBindable = bindable._getBindable(info.dataName.substring(6));//[info.dataName.substring(6)]
-                            if (elemBindable instanceof Bindable) {   //&& !elemBindable.isFunction()) {
-                                //对模型元素内部的绑定元素设置绑定信息，
-                                // 否则更新数据时不能自动更新模型元素内部的绑定元素
-                                if (!elemBindable.isFunction()) {
-                                    bindable = elemBindable;
-                                }
-                            }
-                        }
-                    } else {  //没有绑定在行数据上
-                        var dataName = info.dataName;
-                        bindable = Amber.getBindable(dataName);
-                        if (rowBindable != null) {
-                            //元素处在行元素中，将绑定信息增加到行数据中
-                            //这样当应用行绑定数据时，也会更新这个元素的绑定数据，尽管该元素没有绑定在行数据上
-                            //否则，当新增行时，这个元素不会被应用绑定。
-                            rowBindable.addBindingInfo(info);
+                    if(info.refModel && rowBindable == null) {
+                        console.log("元素不在模型元素中，不能引用行数据。" + info.bindStr);
+                        continue;
+                    }
+
+                    if(rowBindable != null && !info.refModel) {
+                        //元素处在行元素中，将绑定信息增加到行数据中
+                        //这样当应用行绑定数据时，也会更新这个元素的绑定数据，尽管该元素没有绑定在行数据上
+                        //否则，当新增行时，这个元素不会被应用绑定。
+                        rowBindable.addBindingInfo(info);
+                    }
+
+                    bindable = Amber._procBindDataName(info.dataName, rowBindable);
+                    if(bindable != null) {
+                        bindables.push(bindable);
+                    } else {
+                        console.log("指定的绑定数据不正确：" + info.bindStr);
+                    }
+
+                    var params = info.params;
+                    for(var j = 0; params != null && j < params.length; j++) {
+                        var param = params[j];
+                        bindable = Amber._procBindDataName(param, rowBindable);
+                        if(bindable != null) {
+                            bindables.push(bindable);
+                        } else {
+                            console.log("指定的绑定数据不正确：" + info.bindStr);
                         }
                     }
 
-                    if (bindable != null) {
+                    for(var j = 0; j < bindables.length; j++) {
+                        bindable = bindables[j];
                         bindable.addBindingInfo(info);    //把绑定信息添加到可绑定数据中
                         if ($(info.elem).is("input") && info.elem.type == "checkbox" && info.attrName == "bind-checked") {
                             Amber._setupCheckboxHandler(info.elem, bindable);
@@ -236,7 +245,7 @@ Amber.bindElem = function (elem, rowBindable, varname) {
                 }
             } catch (e) {
                 console.log("应用绑定时出错，绑定信息：" +
-                    (info != null ? (info.dataName + "。") : "错误。") + e.description);
+                    (info != null ? (info.bindStr + "。") : "错误。") + e.description);
             }
         }
 
@@ -245,6 +254,29 @@ Amber.bindElem = function (elem, rowBindable, varname) {
         $(elem).find("[bind]").each(function () {   //绑定子元素
             Amber.bindElem(this, rowBindable, varname);
         });
+    }
+};
+
+Amber._procBindDataName = function(dataName, rowBindable) {
+    if(dataName.startWith("model")) {//绑定信息是行数据或方法
+        if(dataName == "model") {
+            return rowBindable;
+        }
+        var elemBindable = rowBindable._getBindable(dataName.substring(6));
+        if (elemBindable instanceof Bindable) {   //&& !elemBindable.isFunction()) {
+            //对模型元素内部的绑定元素设置绑定信息，
+            // 否则更新数据时不能自动更新模型元素内部的绑定元素
+
+            //注释下面的if语句，是要把绑定信息放到函数的绑定数据中
+            //这样可以在put是更新绑定函数的元素
+            //if (!elemBindable.isFunction()) {
+            return elemBindable;
+            //}
+        } else {
+            return null;
+        }
+    }else {  //没有绑定在行数据上
+        return Amber.getBindable(dataName);
     }
 };
 
@@ -326,7 +358,8 @@ Amber.apply = function (bindable, elem) {
         var infoLen = infos == null ? 0 : infos.length;
         for (var i = 0; i < infoLen; i++) {
             var info = infos[i];
-            if (info.elem == elem) {
+            if (info.elem == elem  ||
+                info.bindStr == null || info.attrName == null) {  //bindInfo已经被删除
                 continue;
             }
 
@@ -335,30 +368,63 @@ Amber.apply = function (bindable, elem) {
                 var v;   //当前绑定信息指向的数据
                 var vBindable;  //拥有v的绑定数据
                 if (attrName == "") {  //绑定数据是数组中的一行
-                    if (info.dataName.endWith("\\$model") || info.dataName.startWith("model.")) {
-                        if (info.dataName.startWith("model.")) {//元素绑定在行数据上
-                            attrName = info.dataName.substring(6);
-                            vBindable = bindable._getBindable(attrName);
-                            v = vBindable.get();
-                        } else if (info.dataName.endWith("\\$model")) {//元素没有绑定在行数据上，但是需要行数据作为参数
-                            attrName = attrName == "" ? info.dataName.substring(0, info.dataName.length - 6)
-                                : attrName.substring(0, attrName.length - 6);
-                            vBindable = Amber.getBindable(attrName);
-                            v = vBindable.get();
+                    if(info.refModel) {
+                        if(info.dataName.startWith("model.")) {  //i.e. model.name
+                            attrName = info.dataName.substring(6);  //name
+                            vBindable = bindable._getBindable(attrName);  //bindable of name
+                            v = vBindable == null ? null : vBindable.get();   //value of model.name
+                        } else {  //参数中引用了行数据   //aa.bb$model.c,obj.name
+                            attrName = info.dataName;   //i.e. aa.bb
+                            vBindable = Amber.getBindable(attrName);   //bindable of aa.bb
+                            v = vBindable == null ? null : vBindable.get(); //value of aa.bb
                         }
-
                     } else {
                         //正在对行数据应用绑定，但是元素绑定在与行无关的数据上，需要使用其绑定的数据
-                        //bindable = Bind.getBindable(info.dataName);
+                        //bindable = Bind.getBindable(info.bindStr);
                         vBindable = Amber.getBindable(info.dataName);
-                        v = vBindable.get();
+                        v = vBindable == null ? null : vBindable.get();
                     }
-                } else {
-                    vBindable = bindable;
-                    v = bindable.get();   //不是行数据，取得数据的值
+                } else {//当前bindable不是行数据
+                    if(!(info.attrName.startWith("on") || info.attrName.startWith("event-on")) &&
+                        info.params != null && info.params.length > 0) {//绑定信息引用了参数
+                        if(info.refModel) {//绑定信息引用了行数据
+                            //查找当前bindable所在的行数据
+                            var rowBindable = bindable;
+                            v = null;
+                            while(rowBindable.parent != null) {
+                                rowBindable = rowBindable.parent;
+                                if(rowBindable._attrName == "") {//找到了bindable所在的行数据
+                                    if(info.dataName.startWith("model.")) {  //i.e. model.name
+                                        attrName = info.dataName.substring(6);  //name
+                                        vBindable = rowBindable._getBindable(attrName);  //bindable of name
+                                        v = vBindable == null ? null : vBindable.get();   //value of model.name
+                                    } else {  //参数中引用了行数据   //aa.bb$model.c,obj.name
+                                        attrName = info.dataName;   //i.e. aa.bb
+                                        vBindable = Amber.getBindable(attrName);   //bindable of aa.bb
+                                        v = vBindable == null ? null : vBindable.get(); //value of aa.bb
+                                    }
+
+                                    v = Amber._getDataValue(info, v, rowBindable, vBindable.parent);
+                                    break;
+                                }
+                            }
+                        } else {//绑定信息未引用行数据
+                            vBindable = Amber.getBindable(info.dataName);
+                            v = vBindable == null ? null : vBindable.get();
+                        }
+                    } else {
+                        vBindable = bindable;
+                        v = bindable.get();   //不是行数据，取得数据的值
+                    }
                 }
 
-                var dataValue = (info.attrName.startWith("on") || info.attrName.startWith("event-on")) ? v : Amber._getDataValue(info, v, bindable, vBindable.parent);  //v是函数时等于函数的返回值
+                var dataValue;
+                if(v == null) {
+                    dataValue = undefined;
+                } else {
+                    dataValue = (info.attrName.startWith("on") || info.attrName.startWith("event-on")) ?
+                    v : Amber._getDataValue(info, v, bindable, vBindable.parent);  //v是函数时等于函数的返回值
+                }
                 if (!$(info.elem).is("input") && info.attrName == "text") {
                     $(info.elem).text(dataValue);
                 } else if (!$(info.elem).is("input") && info.attrName == "html") {
@@ -380,22 +446,45 @@ Amber.apply = function (bindable, elem) {
                     //数次（次数与绑定的事件数量有关）之后，浏览器的事件处理将崩溃，许多元素的事件均无效，无论该元素事件是否已经绑定
                     if (v instanceof Function) {
                         var eventName = info.attrName.startWith("on") ? info.attrName.substr(2) : info.attrName.substr(8);
-                        $(info.elem).off(eventName, Amber._eventHandler);
-                        $(info.elem).on(eventName, {func: v, thisArg: vBindable.parent, bindable: bindable},
-                            Amber._eventHandler);
+
+                        var rowBindable = null;
+                        if(info.refModel) {//绑定信息引用了行数据
+                            //查找当前bindable所在的行数据
+                            if(bindable._attrName == "") {
+                                rowBindable = bindable;
+                            } else {
+                                var tmpBindable = bindable;
+                                while(tmpBindable.parent != null) {
+                                    tmpBindable = tmpBindable.parent;
+                                    if(tmpBindable._attrName == "") {//找到了bindable所在的行数据
+                                        rowBindable = tmpBindable;
+                                        break;
+                                    }
+                                }
+                            }
+                        } else {
+                            rowBindable = bindable;
+                        }
+
+                        if(rowBindable != null) {//未引用行数据，或者找到了行数据
+                            var args  = Amber._buildArgs(info, rowBindable);
+                            $(info.elem).off(eventName, Amber._eventHandler);
+                            $(info.elem).on(eventName, {func: v, thisArg: vBindable.parent, bindable: rowBindable, args:args},
+                                Amber._eventHandler);
+                        }
                     }
                 } else if (info.attrName.startWith("css-")) {
                     var cssAttr = info.attrName.substr(4);
                     $(info.elem).css(cssAttr, dataValue);
                 } else {
 //                info.elem.setAttribute(info.attrName, dataValue == undefined? "" :dataValue);
-                    $(info.elem).attr(info.attrName, dataValue == undefined ? "" : dataValue);
+                   // $(info.elem).attr(info.attrName, dataValue == undefined ? "" : dataValue);
                     //在ie,chrome,safari和firefox中用户在修改了输入框中的内容之后，就无法用setAttribute方法改变其value值
                     //因此用下面的方法给value属性赋值
                     info.elem[info.attrName] = dataValue == undefined ? "" : dataValue;
                 }
             } catch (e) {
-                console.error("应用绑定时出错，绑定信息：" + (info != null ? (info.dataName + "。") : "错误。") +
+                console.error("应用绑定时出错，绑定信息：" + (info != null ? (info.bindStr + "。") : "错误。") +
                     e.description);
                 console.error(e.stack);
             }
@@ -421,12 +510,12 @@ Amber.bindAll = function (elem, varname) {
 };
 
 Amber.bind = function (elem) {
-    if (elem != null) {
-        Amber.bindElem(elem);
-    } else {
-        Amber.bindElems();
-    }
-    Amber.apply();
+        if (elem != null) {
+            Amber.bindElem(elem);
+        } else {
+            Amber.bindElems();
+        }
+        Amber.apply();
 };
 
 Amber._getDataValue = function (info, v, bindable, vParent) {
@@ -437,25 +526,67 @@ Amber._getDataValue = function (info, v, bindable, vParent) {
     }
 }
 
+/**
+ *执行函数
+ * @param info
+ * @param func
+ * @param bindable -当前的可绑定数据，即info关联的可绑定数据，并不一定是info.bindStr指定的可绑定数据
+ * @param vParent
+ * @returns {*}
+ * @private
+ */
 Amber._execFunc = function (info, func, bindable, vParent) {
     if (info.dataName.startWith("model.")) {
         try {
-            return func.call(vParent);
+            //调用行对象方法，this(即vParent)为行数据
+            var args = Amber._buildArgs(info, bindable);
+            return func.apply(vParent, args);
         } catch (e) {
-            console.log("调用函数失败：" + info.dataName);
+            console.log("调用函数失败：" + info.bindStr);
             console.error(e);
         }
     } else {
         try {
-            return func.call(vParent, bindable);
+            //调用非行对象方法，this为func对象的上级可绑定数据
+            //如果在模型元素内，bindable为行数据
+            //如果不在模型元素内，bindable为func的bindable
+            var args = [bindable].concat(Amber._buildArgs(info, bindable));
+            return func.apply(vParent, args);
         } catch (e) {
-            console.log("调用函数失败：" + info.dataName);
+            console.log("调用函数失败：" + info.bindStr);
             console.error(e);
         }
     }
 
     return null;
 };
+
+/**
+ *构造info中指明的参数表
+ * @param info -绑定信息
+ * @param bindable -当前行数据
+ * @private
+ */
+Amber._buildArgs = function(info, bindable) {
+    var args = [];
+    var params = info.params == null? [] : info.params;
+    for(var i = 0; i < params.length; i++) {
+        var param = params[i];
+        if(param == "model") {
+            args.push(bindable);  //如果在模型元素内，bindable为行数据
+        } else if(param.startWith("model.")) {  //i.e. $model.name
+            var attrName = param.substring(6);  //name
+            var attrBindable = bindable._getBindable(attrName);  //bindable of name
+            //var v = attrBindable == null ? null : attrBindable.get();   //value of model.name
+            args.push(attrBindable);
+        } else {
+            var attrBindable = Amber(param);
+            //var v = attrBindable == null ? null : attrBindable.get();
+            args.push(attrBindable);
+        }
+    }
+    return args;
+}
 
 Amber._setupTextHandler = function (elem, bindable) {
     $(elem).bind("input propertychange", function (event) {
@@ -501,8 +632,9 @@ Amber._setupSelectHandler = function (elem, bindable) {
 
 Amber._eventHandler = function (event) {
     var func = event.data.func, bindable = event.data.bindable,
-        thisArg = event.data.thisArg;
-    func.call(thisArg, bindable, event);
+        thisArg = event.data.thisArg, args = event.data.args;
+    args = [].concat(bindable, event, args);
+    func.apply(thisArg, args);
 };
 
 
